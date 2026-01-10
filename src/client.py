@@ -1,6 +1,8 @@
 import os
 import re
 import json
+import socket
+from pathlib import Path
 import time
 import fastapi
 import uvicorn
@@ -16,11 +18,32 @@ from utils import get_current_time
 from blockchain import BlockChain, Transaction
 from fastapi import Body
 
-with open('config.json') as f:
+CONFIG_PATH = Path(__file__).with_name('config.json')
+with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
     CONFIG = json.load(f)
 
+
+def detect_local_ip(dest_ip: str) -> str:
+    """Best-effort LAN IP detection (no internet required)."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect((dest_ip, 80))
+        return s.getsockname()[0]
+    except Exception:
+        try:
+            return socket.gethostbyname(socket.gethostname())
+        except Exception:
+            return '127.0.0.1'
+    finally:
+        s.close()
+
+
+RESULT_DIR = Path(__file__).resolve().parent.parent / 'result'
+RESULT_DIR.mkdir(exist_ok=True)
+LOG_PATH = RESULT_DIR / 'activity.log'
+
 logging.basicConfig(
-    level=logging.INFO, filename='../result/activity.log',
+    level=logging.INFO, filename=str(LOG_PATH),
     format='%(asctime)s %(levelname)s %(name)s %(message)s'
 )
 
@@ -235,7 +258,11 @@ def register_client(server_addr) -> Client:
 
     info = res.json()
     client_id = info['client_id']
-    client_addr = 'http://{}:{}'.format(CONFIG['HOST_IPv4'], CONFIG['HOST_PORT'] + client_id)
+    client_port = CONFIG['CLIENT_BASE_PORT'] + client_id
+    public_ip = CONFIG.get('CLIENT_PUBLIC_IPv4', 'auto')
+    if public_ip == 'auto':
+        public_ip = detect_local_ip(CONFIG['SERVER_IPv4'])
+    client_addr = f"http://{public_ip}:{client_port}"
 
     other_clients = dict((int(k), v) for k, v in info['other_clients'].items())
     server_addr = info['server_addr']
@@ -268,15 +295,15 @@ def register_client(server_addr) -> Client:
 
     return Client(
         client_id,
-        CONFIG['HOST_IPv4'],
-        port=CONFIG['HOST_PORT'] + client_id,
+        CONFIG['CLIENT_BIND_HOST'],
+        port=client_port,
         server_addr=server_addr,
         other_clients=other_clients
     )
 
 
 app = fastapi.FastAPI()
-server_address = 'http://{}:{}'.format(CONFIG['HOST_IPv4'], CONFIG['HOST_PORT'])
+server_address = f"http://{CONFIG['SERVER_IPv4']}:{CONFIG['SERVER_PORT']}"
 client = register_client(server_address)
 msg_process_loop = timeloop.Timeloop()
 

@@ -1,179 +1,100 @@
-import fastapi
-from fastapi import Body
 import json
-import uvicorn
-import time
-import os
-import threading
 import logging
-from pprint import pprint
-from typing import List, Dict
+import threading
+from pathlib import Path
+from typing import Dict
+
+from fastapi import FastAPI, Request
+import uvicorn
 
 from blockchain import Account, Transaction
-from utils import get_current_time
 
-with open('config.json') as f:
+CONFIG_PATH = Path(__file__).with_name("config.json")
+with open(CONFIG_PATH, "r", encoding="utf-8") as f:
     CONFIG = json.load(f)
 
-logging.basicConfig(
-    level=logging.INFO, filename='../result/activity.log',
-    format='%(asctime)s %(levelname)s %(name)s %(message)s'
-)
+logging.basicConfig(level=logging.INFO)
+
+app = FastAPI(title="CSE707 Bank Server")
+
+_lock = threading.Lock()
+_accounts: Dict[int, Account] = {}
+_clients_ip: Dict[int, str] = {}  # client_id -> ip
 
 
-def tx_from_payload(payload: dict) -> Transaction:
-    return Transaction(
-        sender_id=payload["sender_id"],
-        recipient_id=payload["recipient_id"],
-        amount=payload["amount"],
-        sender_logic_clock=payload.get("sender_logic_clock", 0),
-        timestamp=payload.get("timestamp"),
-        status=payload.get("status", "PENDING"),
-        num_replies=payload.get("num_replies", 0),
-    )
+def _server_addr() -> str:
+    return f"http://{CONFIG['SERVER_IPv4']}:{CONFIG['SERVER_PORT']}"
 
 
-class BankServer:
-    """Bank server"""
-    __instance = None  # Singleton pattern
-
-    def __new__(cls, *args, **kwargs):
-        if not cls.__instance:
-            cls.__instance = super().__new__(cls, *args, **kwargs)
-        return cls.__instance
-
-    def __init__(self) -> None:
-        self.accounts: List[Account] = []
-        self.transactions: List[Transaction] = []
-        self.clients: Dict[int, str] = {}
-
-        self.ipv4 = CONFIG['HOST_IPv4']
-        self.port = CONFIG['HOST_PORT']
-
-        self.router = fastapi.APIRouter()
-        self.router.add_api_route('/', self.root, methods=['GET'])
-        self.router.add_api_route('/register', self.register, methods=['GET'])
-        self.router.add_api_route('/balance/{client_id}', self.balance, methods=['GET'])
-        self.router.add_api_route('/transfer', self.transfer, methods=['POST'])
-        self.router.add_api_route('/exit/{client_id}', self.shutdown_client, methods=['GET'])
-
-    # ---------------- ordinary functions ----------------
-    def prompt(self):
-        time.sleep(1)
-        print('Welcome to the blockchain bank server!')
-        print('Commands:')
-        print('  1. print_table (or print, p)')
-        print('  2. exit (or quit, q)')
-        print('Enter a command:')
-
-    def interact(self):
-        while True:
-            cmd = input('>>> ').strip()
-            if cmd in ['exit', 'quit', 'q']:
-                print('Exiting...')
-                os._exit(0)
-            elif cmd in ['print_table', 'print', 'p']:
-                self.print_balance_table()
-            elif cmd == 'clients':
-                print(self.clients)
-            else:
-                print('Invalid command')
-            print()
-
-    def print_balance_table(self):
-        self._check_account_info()
-        print('client_id\tbalance\trecent_access_time')
-        for account in self.accounts:
-            print('        {}\t{}\t{}'.format(account.id, account.balance, account.recent_access_time))
-
-    def __repr__(self) -> str:
-        return 'BankServer(num_accounts={}, num_transactions={})'.format(len(self.accounts), len(self.transactions))
-
-    def _check_account_info(self):
-        assert len(self.accounts) == len(self.clients)
-        ids = [a.id for a in self.accounts]
-        assert len(set(ids)) == len(ids)
-
-    # ---------------- view functions ----------------
-    async def root(self):
-        return {'message': 'Welcome to the blockchain bank server!'}
-
-    async def balance(self, client_id: int):
-        self._check_account_info()
-        account = [a for a in self.accounts if a.id == client_id][0]
-        account.recent_access_time = get_current_time()
-        return {'balance': account.balance}
-
-    async def register(self):
-        self._check_account_info()
-
-        ids = [a.id for a in self.accounts]
-        client_id = max(ids) + 1 if ids else 1
-
-        # IMPORTANT: your Account is a normal class, so create it positionally
-        self.accounts.append(Account(client_id))  # balance defaults to 10.0
-
-        other_clients = self.clients.copy()
-        self.clients[client_id] = 'http://{}:{}'.format(CONFIG['HOST_IPv4'], CONFIG['HOST_PORT'] + client_id)
-
-        print('New client: {}, now all clients:'.format(client_id))
-        pprint(self.clients)
-
-        return {
-            'client_id': client_id,
-            'other_clients': other_clients,
-            'server_addr': f'http://{self.ipv4}:{self.port}'
-        }
-
-    async def transfer(self, payload: dict = Body(...)):
-        """Transfer money from sender to recipient (payload is JSON dict)."""
-        self._check_account_info()
-
-        transaction = tx_from_payload(payload)
-
-        sender = [a for a in self.accounts if a.id == transaction.sender_id][0]
-        recipient = [a for a in self.accounts if a.id == transaction.recipient_id][0]
-
-        sender.recent_access_time = get_current_time()
-        recipient.recent_access_time = sender.recent_access_time
-
-        # optional validation
-        if transaction.amount < 0:
-            return {'result': 'fail', 'reason': 'amount must be positive'}
-        if sender.balance < transaction.amount:
-            return {'result': 'fail', 'reason': 'insufficient balance'}
-
-        sender.balance -= transaction.amount
-        recipient.balance += transaction.amount
-
-        self.transactions.append(transaction)
-
-        logging.info(
-            'Bank server record updated: Client %s transferring %s to client %s',
-            transaction.sender_id, transaction.amount, transaction.recipient_id
-        )
-        return {'result': 'success'}
-
-    async def shutdown_client(self, client_id: int):
-        self.clients.pop(client_id, None)
-        self.accounts = [a for a in self.accounts if a.id != client_id]
-        print('Client {} shutdown, now all clients:'.format(client_id))
-        pprint(self.clients)
-        return {'result': 'success'}
+def _client_addr(client_id: int) -> str:
+    ip = _clients_ip[client_id]
+    port = CONFIG["CLIENT_BASE_PORT"] + client_id
+    return f"http://{ip}:{port}"
 
 
-if __name__ == '__main__':
-    server = BankServer()
-    app = fastapi.FastAPI()
-    app.include_router(server.router)
+@app.get("/")
+async def health():
+    return {"ok": True, "server_addr": _server_addr(), "num_clients": len(_clients_ip)}
 
-    threading.Thread(target=uvicorn.run, kwargs={
-        'app': app,
-        'host': server.ipv4,
-        'port': server.port,
-        'log_level': 'warning'
-    }).start()
 
-    print('Bank server:', server)
-    server.prompt()
-    server.interact()
+@app.get("/register")
+async def register(request: Request):
+    # Identify the client machine's IP as seen by the server
+    client_ip = request.client.host
+
+    with _lock:
+        # allocate next id (1,2,3,...)
+        client_id = 1
+        if _accounts:
+            client_id = max(_accounts.keys()) + 1
+
+        _accounts[client_id] = Account(id=client_id, balance=10.0)
+        _clients_ip[client_id] = client_ip
+
+        other_clients = {cid: _client_addr(cid) for cid in _clients_ip.keys() if cid != client_id}
+
+    logging.info("Registered client %s from %s", client_id, client_ip)
+    return {"client_id": client_id, "other_clients": other_clients, "server_addr": _server_addr()}
+
+
+@app.get("/balance/{client_id}")
+async def balance(client_id: int):
+    with _lock:
+        if client_id not in _accounts:
+            return {"error": "unknown client_id"}
+        return {"balance": _accounts[client_id].balance}
+
+
+@app.post("/transfer")
+async def transfer(payload: dict):
+    tx = Transaction(**payload)
+
+    with _lock:
+        if tx.sender_id not in _accounts or tx.recipient_id not in _accounts:
+            return {"result": "failure", "error": "unknown client id"}
+
+        sender = _accounts[tx.sender_id]
+        recipient = _accounts[tx.recipient_id]
+
+        # server trusts clients to have already used Lamport mutual exclusion
+        if sender.balance < tx.amount:
+            return {"result": "failure", "error": "insufficient balance"}
+
+        sender.balance -= tx.amount
+        recipient.balance += tx.amount
+
+    logging.info("Transfer %s -> %s amount=%s", tx.sender_id, tx.recipient_id, tx.amount)
+    return {"result": "success"}
+
+
+@app.get("/exit/{client_id}")
+async def exit_client(client_id: int):
+    with _lock:
+        _clients_ip.pop(client_id, None)
+        # Keep account for grading/demo or remove; here we keep it.
+    logging.info("Client %s exited", client_id)
+    return {"result": "success"}
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=int(CONFIG["SERVER_PORT"]), log_level="info")
