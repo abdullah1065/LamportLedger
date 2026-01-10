@@ -1,0 +1,138 @@
+2026-01-10 10:41:57,894 INFO timeloop Starting Timeloop..
+2026-01-10 10:41:57,897 INFO timeloop Registered job <function process_message at 0x000001F52896C7C0>
+2026-01-10 10:41:57,897 INFO timeloop Timeloop now started. Jobs will run based on the interval set
+2026-01-10 10:41:57,924 CRITICAL concurrent.futures Exception in worker
+Traceback (most recent call last):
+  File "C:\Users\USER\anaconda3\Lib\concurrent\futures\thread.py", line 90, in _worker
+    work_item = work_queue.get(block=True)
+  File "src/gevent/queue.py", line 406, in gevent._gevent_cqueue.SimpleQueue.get
+  File "src/gevent/queue.py", line 422, in gevent._gevent_cqueue.SimpleQueue.get
+  File "src/gevent/queue.py", line 398, in gevent._gevent_cqueue.SimpleQueue._SimpleQueue__get_or_peek
+  File "src/gevent/_waiter.py", line 154, in gevent._gevent_c_waiter.Waiter.get
+  File "src/gevent/_greenlet_primitives.py", line 65, in gevent._gevent_c_greenlet_primitives.SwitchOutGreenletWithLoop.switch
+  File "src/gevent/_gevent_c_greenlet_primitives.pxd", line 35, in gevent._gevent_c_greenlet_primitives._greenlet_switch
+gevent.exceptions.LoopExit: This operation would block forever
+	Hub: <Hub '' at 0x1f529060cc0 backend=default ptr=<cdata 'struct uv_loop_s *' 0x000001F528FC92F0> pending=0 ref=0 callbacks=0 resolver=<gevent.resolver.thread.Resolver at 0x1f528c4ec10 pool=<ThreadPool at 0x1f528fb67a0 tasks=0 size=1 maxsize=10 hub=<Hub at 0x1f529060cc0 thread_ident=0x98ac>>> threadpool=<ThreadPool at 0x1f528fb67a0 tasks=0 size=1 maxsize=10 hub=<Hub at 0x1f529060cc0 thread_ident=0x98ac>> thread_ident=0x98ac>
+	Handles:
+[HandleState(handle=<cdata 'struct uv_handle_s *' 0x000001F527F1EF28>, type=b'check', watcher=<gevent.libuv.loop.loop at 0x1f528c4ead0 backend=default ptr=<cdata 'struct uv_loop_s *' 0x000001F528FC92F0> pending=0 ref=0 callbacks=0>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x000001F527E6FF08>, type=b'timer', watcher=<gevent.libuv.loop.loop at 0x1f528c4ead0 backend=default ptr=<cdata 'struct uv_loop_s *' 0x000001F528FC92F0> pending=0 ref=0 callbacks=0>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x000001F527F1E848>, type=b'prepare', watcher=<gevent.libuv.loop.loop at 0x1f528c4ead0 backend=default ptr=<cdata 'struct uv_loop_s *' 0x000001F528FC92F0> pending=0 ref=0 callbacks=0>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x000001F527F1DF58>, type=b'check', watcher=<gevent.libuv.loop.loop at 0x1f528c4ead0 backend=default ptr=<cdata 'struct uv_loop_s *' 0x000001F528FC92F0> pending=0 ref=0 callbacks=0>, ref=1, active=0, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x000001F527A96428>, type=b'async', watcher=<async_ at 0x1f528fc7bb0 callback=<function AbstractLoop._init_loop_and_aux_watchers.<locals>.<lambda> at 0x000001F5290684A0> args=() watcher=<cdata 'struct uv_async_s *' owning 224 bytes> handle=<cdata 'void *' 0x000001F5290644C0> ref=False>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x000001F527A96538>, type=b'async', watcher=<async_ at 0x1f529010050 callback=<bound method ThreadPool._on_fork of <ThreadPool at 0x1f528fb67a0 tasks=0 size=1 maxsize=10 hub=<Hub at 0x1f529060cc0 thread_ident=0x98ac>>> args=() watcher=<cdata 'struct uv_async_s *' owning 224 bytes> handle=<cdata 'void *' 0x000001F5290648C0> ref=False>, ref=0, active=1, closing=0)]
+2026-01-10 10:45:24,818 INFO timeloop Starting Timeloop..
+2026-01-10 10:45:24,819 INFO timeloop Registered job <function process_message at 0x0000023B50D77100>
+2026-01-10 10:45:24,819 INFO timeloop Timeloop now started. Jobs will run based on the interval set
+2026-01-10 10:45:24,852 CRITICAL concurrent.futures Exception in worker
+Traceback (most recent call last):
+  File "C:\Users\USER\anaconda3\Lib\concurrent\futures\thread.py", line 90, in _worker
+    work_item = work_queue.get(block=True)
+  File "src/gevent/queue.py", line 406, in gevent._gevent_cqueue.SimpleQueue.get
+  File "src/gevent/queue.py", line 422, in gevent._gevent_cqueue.SimpleQueue.get
+  File "src/gevent/queue.py", line 398, in gevent._gevent_cqueue.SimpleQueue._SimpleQueue__get_or_peek
+  File "src/gevent/_waiter.py", line 154, in gevent._gevent_c_waiter.Waiter.get
+  File "src/gevent/_greenlet_primitives.py", line 65, in gevent._gevent_c_greenlet_primitives.SwitchOutGreenletWithLoop.switch
+  File "src/gevent/_gevent_c_greenlet_primitives.pxd", line 35, in gevent._gevent_c_greenlet_primitives._greenlet_switch
+gevent.exceptions.LoopExit: This operation would block forever
+	Hub: <Hub '' at 0x23b51225fd0 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000023B511992F0> pending=0 ref=0 callbacks=0 resolver=<gevent.resolver.thread.Resolver at 0x23b50deead0 pool=<ThreadPool at 0x23b511925e0 tasks=0 size=1 maxsize=10 hub=<Hub at 0x23b51225fd0 thread_ident=0x71c8>>> threadpool=<ThreadPool at 0x23b511925e0 tasks=0 size=1 maxsize=10 hub=<Hub at 0x23b51225fd0 thread_ident=0x71c8>> thread_ident=0x71c8>
+	Handles:
+[HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000023B4FB9DE98>, type=b'check', watcher=<gevent.libuv.loop.loop at 0x23b50dee990 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000023B511992F0> pending=0 ref=0 callbacks=0>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000023B50067988>, type=b'timer', watcher=<gevent.libuv.loop.loop at 0x23b50dee990 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000023B511992F0> pending=0 ref=0 callbacks=0>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000023B4FB9D868>, type=b'prepare', watcher=<gevent.libuv.loop.loop at 0x23b50dee990 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000023B511992F0> pending=0 ref=0 callbacks=0>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000023B4FB9D2E8>, type=b'check', watcher=<gevent.libuv.loop.loop at 0x23b50dee990 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000023B511992F0> pending=0 ref=0 callbacks=0>, ref=1, active=0, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000023B4FC71E48>, type=b'async', watcher=<async_ at 0x23b511e5370 callback=<function AbstractLoop._init_loop_and_aux_watchers.<locals>.<lambda> at 0x0000023B51238540> args=() watcher=<cdata 'struct uv_async_s *' owning 224 bytes> handle=<cdata 'void *' 0x0000023B512308C0> ref=False>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000023B4FC71F58>, type=b'async', watcher=<async_ at 0x23b51200380 callback=<bound method ThreadPool._on_fork of <ThreadPool at 0x23b511925e0 tasks=0 size=1 maxsize=10 hub=<Hub at 0x23b51225fd0 thread_ident=0x71c8>>> args=() watcher=<cdata 'struct uv_async_s *' owning 224 bytes> handle=<cdata 'void *' 0x0000023B51230CC0> ref=False>, ref=0, active=1, closing=0)]
+2026-01-10 10:45:34,866 INFO root Client 2 sends request to client 1
+2026-01-10 10:45:53,112 INFO root Client 2 sends request to client 1
+2026-01-10 10:46:20,712 INFO root Client 1 sends request to client 2
+2026-01-10 10:50:58,217 INFO root Client 1 sends request to client 2
+2026-01-10 10:52:52,270 INFO root Client 1 sends request to client 2
+2026-01-10 10:53:26,145 INFO root Client 2 exit the system
+2026-01-10 10:56:40,115 INFO timeloop Starting Timeloop..
+2026-01-10 10:56:40,140 INFO timeloop Registered job <function process_message at 0x00000221354E89A0>
+2026-01-10 10:56:40,140 INFO timeloop Timeloop now started. Jobs will run based on the interval set
+2026-01-10 10:56:40,183 CRITICAL concurrent.futures Exception in worker
+Traceback (most recent call last):
+  File "C:\Users\USER\anaconda3\Lib\concurrent\futures\thread.py", line 90, in _worker
+    work_item = work_queue.get(block=True)
+  File "src/gevent/queue.py", line 406, in gevent._gevent_cqueue.SimpleQueue.get
+  File "src/gevent/queue.py", line 422, in gevent._gevent_cqueue.SimpleQueue.get
+  File "src/gevent/queue.py", line 398, in gevent._gevent_cqueue.SimpleQueue._SimpleQueue__get_or_peek
+  File "src/gevent/_waiter.py", line 154, in gevent._gevent_c_waiter.Waiter.get
+  File "src/gevent/_greenlet_primitives.py", line 65, in gevent._gevent_c_greenlet_primitives.SwitchOutGreenletWithLoop.switch
+  File "src/gevent/_gevent_c_greenlet_primitives.pxd", line 35, in gevent._gevent_c_greenlet_primitives._greenlet_switch
+gevent.exceptions.LoopExit: This operation would block forever
+	Hub: <Hub '' at 0x22135b61120 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000022135AC92F0> pending=0 ref=0 callbacks=0 resolver=<gevent.resolver.thread.Resolver at 0x22135742e90 pool=<ThreadPool at 0x22135ac2650 tasks=0 size=1 maxsize=10 hub=<Hub at 0x22135b61120 thread_ident=0x5214>>> threadpool=<ThreadPool at 0x22135ac2650 tasks=0 size=1 maxsize=10 hub=<Hub at 0x22135b61120 thread_ident=0x5214>> thread_ident=0x5214>
+	Handles:
+[HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000022134A5DC88>, type=b'check', watcher=<gevent.libuv.loop.loop at 0x22135742d50 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000022135AC92F0> pending=0 ref=0 callbacks=0>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000022134A249B8>, type=b'timer', watcher=<gevent.libuv.loop.loop at 0x22135742d50 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000022135AC92F0> pending=0 ref=0 callbacks=0>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000022134A5D918>, type=b'prepare', watcher=<gevent.libuv.loop.loop at 0x22135742d50 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000022135AC92F0> pending=0 ref=0 callbacks=0>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000022134A5BEF8>, type=b'check', watcher=<gevent.libuv.loop.loop at 0x22135742d50 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000022135AC92F0> pending=0 ref=0 callbacks=0>, ref=1, active=0, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x00000221345AF498>, type=b'async', watcher=<async_ at 0x22135ae3a80 callback=<function AbstractLoop._init_loop_and_aux_watchers.<locals>.<lambda> at 0x0000022135B68680> args=() watcher=<cdata 'struct uv_async_s *' owning 224 bytes> handle=<cdata 'void *' 0x0000022135B5AD00> ref=False>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x00000221345ADE48>, type=b'async', watcher=<async_ at 0x22135b19250 callback=<bound method ThreadPool._on_fork of <ThreadPool at 0x22135ac2650 tasks=0 size=1 maxsize=10 hub=<Hub at 0x22135b61120 thread_ident=0x5214>>> args=() watcher=<cdata 'struct uv_async_s *' owning 224 bytes> handle=<cdata 'void *' 0x0000022135B5B100> ref=False>, ref=0, active=1, closing=0)]
+2026-01-10 10:57:03,086 INFO timeloop Starting Timeloop..
+2026-01-10 10:57:03,087 INFO timeloop Registered job <function process_message at 0x000001EE2AE7B2E0>
+2026-01-10 10:57:03,088 INFO timeloop Timeloop now started. Jobs will run based on the interval set
+2026-01-10 10:57:03,164 CRITICAL concurrent.futures Exception in worker
+Traceback (most recent call last):
+  File "C:\Users\USER\anaconda3\Lib\concurrent\futures\thread.py", line 90, in _worker
+    work_item = work_queue.get(block=True)
+  File "src/gevent/queue.py", line 406, in gevent._gevent_cqueue.SimpleQueue.get
+  File "src/gevent/queue.py", line 422, in gevent._gevent_cqueue.SimpleQueue.get
+  File "src/gevent/queue.py", line 398, in gevent._gevent_cqueue.SimpleQueue._SimpleQueue__get_or_peek
+  File "src/gevent/_waiter.py", line 154, in gevent._gevent_c_waiter.Waiter.get
+  File "src/gevent/_greenlet_primitives.py", line 65, in gevent._gevent_c_greenlet_primitives.SwitchOutGreenletWithLoop.switch
+  File "src/gevent/_gevent_c_greenlet_primitives.pxd", line 35, in gevent._gevent_c_greenlet_primitives._greenlet_switch
+gevent.exceptions.LoopExit: This operation would block forever
+	Hub: <Hub '' at 0x1ee2b352390 backend=default ptr=<cdata 'struct uv_loop_s *' 0x000001EE2B2D12F0> pending=0 ref=0 callbacks=0 resolver=<gevent.resolver.thread.Resolver at 0x1ee2ae86d50 pool=<ThreadPool at 0x1ee2b2ca8f0 tasks=0 size=1 maxsize=10 hub=<Hub at 0x1ee2b352390 thread_ident=0xaa08>>> threadpool=<ThreadPool at 0x1ee2b2ca8f0 tasks=0 size=1 maxsize=10 hub=<Hub at 0x1ee2b352390 thread_ident=0xaa08>> thread_ident=0xaa08>
+	Handles:
+[HandleState(handle=<cdata 'struct uv_handle_s *' 0x000001EE2A253C58>, type=b'check', watcher=<gevent.libuv.loop.loop at 0x1ee2ae86c10 backend=default ptr=<cdata 'struct uv_loop_s *' 0x000001EE2B2D12F0> pending=0 ref=0 callbacks=0>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x000001EE26D840F8>, type=b'timer', watcher=<gevent.libuv.loop.loop at 0x1ee2ae86c10 backend=default ptr=<cdata 'struct uv_loop_s *' 0x000001EE2B2D12F0> pending=0 ref=0 callbacks=0>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x000001EE2A2532B8>, type=b'prepare', watcher=<gevent.libuv.loop.loop at 0x1ee2ae86c10 backend=default ptr=<cdata 'struct uv_loop_s *' 0x000001EE2B2D12F0> pending=0 ref=0 callbacks=0>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x000001EE2A2538E8>, type=b'check', watcher=<gevent.libuv.loop.loop at 0x1ee2ae86c10 backend=default ptr=<cdata 'struct uv_loop_s *' 0x000001EE2B2D12F0> pending=0 ref=0 callbacks=0>, ref=1, active=0, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x000001EE29DDABD8>, type=b'async', watcher=<async_ at 0x1ee2b329010 callback=<function AbstractLoop._init_loop_and_aux_watchers.<locals>.<lambda> at 0x000001EE2B368720> args=() watcher=<cdata 'struct uv_async_s *' owning 224 bytes> handle=<cdata 'void *' 0x000001EE2B35F300> ref=False>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x000001EE29DDB238>, type=b'async', watcher=<async_ at 0x1ee2b3016a0 callback=<bound method ThreadPool._on_fork of <ThreadPool at 0x1ee2b2ca8f0 tasks=0 size=1 maxsize=10 hub=<Hub at 0x1ee2b352390 thread_ident=0xaa08>>> args=() watcher=<cdata 'struct uv_async_s *' owning 224 bytes> handle=<cdata 'void *' 0x000001EE2B35F700> ref=False>, ref=0, active=1, closing=0)]
+2026-01-10 11:01:54,568 INFO timeloop Starting Timeloop..
+2026-01-10 11:01:54,571 INFO timeloop Registered job <function process_message at 0x0000025FE3618CC0>
+2026-01-10 11:01:54,571 INFO timeloop Timeloop now started. Jobs will run based on the interval set
+2026-01-10 11:01:54,601 CRITICAL concurrent.futures Exception in worker
+Traceback (most recent call last):
+  File "C:\Users\USER\anaconda3\Lib\concurrent\futures\thread.py", line 90, in _worker
+    work_item = work_queue.get(block=True)
+  File "src/gevent/queue.py", line 406, in gevent._gevent_cqueue.SimpleQueue.get
+  File "src/gevent/queue.py", line 422, in gevent._gevent_cqueue.SimpleQueue.get
+  File "src/gevent/queue.py", line 398, in gevent._gevent_cqueue.SimpleQueue._SimpleQueue__get_or_peek
+  File "src/gevent/_waiter.py", line 154, in gevent._gevent_c_waiter.Waiter.get
+  File "src/gevent/_greenlet_primitives.py", line 65, in gevent._gevent_c_greenlet_primitives.SwitchOutGreenletWithLoop.switch
+  File "src/gevent/_gevent_c_greenlet_primitives.pxd", line 35, in gevent._gevent_c_greenlet_primitives._greenlet_switch
+gevent.exceptions.LoopExit: This operation would block forever
+	Hub: <Hub '' at 0x25fe3c59210 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000025FE3BCD2F0> pending=0 ref=0 callbacks=0 resolver=<gevent.resolver.thread.Resolver at 0x25fe37ff110 pool=<ThreadPool at 0x25fe3b9ece0 tasks=0 size=1 maxsize=10 hub=<Hub at 0x25fe3c59210 thread_ident=0x5a90>>> threadpool=<ThreadPool at 0x25fe3b9ece0 tasks=0 size=1 maxsize=10 hub=<Hub at 0x25fe3c59210 thread_ident=0x5a90>> thread_ident=0x5a90>
+	Handles:
+[HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000025FE2B389C8>, type=b'check', watcher=<gevent.libuv.loop.loop at 0x25fe37fefd0 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000025FE3BCD2F0> pending=0 ref=0 callbacks=0>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000025FE29E90D8>, type=b'timer', watcher=<gevent.libuv.loop.loop at 0x25fe37fefd0 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000025FE3BCD2F0> pending=0 ref=0 callbacks=0>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000025FE2B38188>, type=b'prepare', watcher=<gevent.libuv.loop.loop at 0x25fe37fefd0 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000025FE3BCD2F0> pending=0 ref=0 callbacks=0>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000025FE2B39788>, type=b'check', watcher=<gevent.libuv.loop.loop at 0x25fe37fefd0 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000025FE3BCD2F0> pending=0 ref=0 callbacks=0>, ref=1, active=0, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000025FE26BBB08>, type=b'async', watcher=<async_ at 0x25fe3bcbbb0 callback=<function AbstractLoop._init_loop_and_aux_watchers.<locals>.<lambda> at 0x0000025FE3C689A0> args=() watcher=<cdata 'struct uv_async_s *' owning 224 bytes> handle=<cdata 'void *' 0x0000025FE3C5D1C0> ref=False>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000025FE26BBD28>, type=b'async', watcher=<async_ at 0x25fe3c14050 callback=<bound method ThreadPool._on_fork of <ThreadPool at 0x25fe3b9ece0 tasks=0 size=1 maxsize=10 hub=<Hub at 0x25fe3c59210 thread_ident=0x5a90>>> args=() watcher=<cdata 'struct uv_async_s *' owning 224 bytes> handle=<cdata 'void *' 0x0000025FE3C5D640> ref=False>, ref=0, active=1, closing=0)]
+2026-01-10 11:02:16,935 INFO timeloop Starting Timeloop..
+2026-01-10 11:02:16,936 INFO timeloop Registered job <function process_message at 0x0000018B1F59B600>
+2026-01-10 11:02:16,936 INFO timeloop Timeloop now started. Jobs will run based on the interval set
+2026-01-10 11:02:16,976 CRITICAL concurrent.futures Exception in worker
+Traceback (most recent call last):
+  File "C:\Users\USER\anaconda3\Lib\concurrent\futures\thread.py", line 90, in _worker
+    work_item = work_queue.get(block=True)
+  File "src/gevent/queue.py", line 406, in gevent._gevent_cqueue.SimpleQueue.get
+  File "src/gevent/queue.py", line 422, in gevent._gevent_cqueue.SimpleQueue.get
+  File "src/gevent/queue.py", line 398, in gevent._gevent_cqueue.SimpleQueue._SimpleQueue__get_or_peek
+  File "src/gevent/_waiter.py", line 154, in gevent._gevent_c_waiter.Waiter.get
+  File "src/gevent/_greenlet_primitives.py", line 65, in gevent._gevent_c_greenlet_primitives.SwitchOutGreenletWithLoop.switch
+  File "src/gevent/_gevent_c_greenlet_primitives.pxd", line 35, in gevent._gevent_c_greenlet_primitives._greenlet_switch
+gevent.exceptions.LoopExit: This operation would block forever
+	Hub: <Hub '' at 0x18b1fae6570 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000018B1FA5D2F0> pending=0 ref=0 callbacks=0 resolver=<gevent.resolver.thread.Resolver at 0x18b1f5a6fd0 pool=<ThreadPool at 0x18b1fa3ac00 tasks=0 size=1 maxsize=10 hub=<Hub at 0x18b1fae6570 thread_ident=0x995c>>> threadpool=<ThreadPool at 0x18b1fa3ac00 tasks=0 size=1 maxsize=10 hub=<Hub at 0x18b1fae6570 thread_ident=0x995c>> thread_ident=0x995c>
+	Handles:
+[HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000018B1EAFDB88>, type=b'check', watcher=<gevent.libuv.loop.loop at 0x18b1f5a6e90 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000018B1FA5D2F0> pending=0 ref=0 callbacks=0>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000018B1E984178>, type=b'timer', watcher=<gevent.libuv.loop.loop at 0x18b1f5a6e90 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000018B1FA5D2F0> pending=0 ref=0 callbacks=0>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000018B1EAFE738>, type=b'prepare', watcher=<gevent.libuv.loop.loop at 0x18b1f5a6e90 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000018B1FA5D2F0> pending=0 ref=0 callbacks=0>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000018B1EAFDC38>, type=b'check', watcher=<gevent.libuv.loop.loop at 0x18b1f5a6e90 backend=default ptr=<cdata 'struct uv_loop_s *' 0x0000018B1FA5D2F0> pending=0 ref=0 callbacks=0>, ref=1, active=0, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000018B1E696C38>, type=b'async', watcher=<async_ at 0x18b1faa9250 callback=<function AbstractLoop._init_loop_and_aux_watchers.<locals>.<lambda> at 0x0000018B1FAF8A40> args=() watcher=<cdata 'struct uv_async_s *' owning 224 bytes> handle=<cdata 'void *' 0x0000018B1FAED900> ref=False>, ref=0, active=1, closing=0),
+ HandleState(handle=<cdata 'struct uv_handle_s *' 0x0000018B1E697078>, type=b'async', watcher=<async_ at 0x18b1fad0380 callback=<bound method ThreadPool._on_fork of <ThreadPool at 0x18b1fa3ac00 tasks=0 size=1 maxsize=10 hub=<Hub at 0x18b1fae6570 thread_ident=0x995c>>> args=() watcher=<cdata 'struct uv_async_s *' owning 224 bytes> handle=<cdata 'void *' 0x0000018B1FAEDCC0> ref=False>, ref=0, active=1, closing=0)]
