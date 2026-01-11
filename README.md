@@ -31,7 +31,7 @@ We also enforce **Lamport mutual exclusion** for the **transfer critical section
 ## System Architecture
 
 ### Components
-1. **Bank Server (`server.py`)**
+1. **Lamport Ledger Server (`server.py`)**
    - Maintains account balances
    - Handles client registration
    - Executes transfers (balance updates)
@@ -49,7 +49,7 @@ We also enforce **Lamport mutual exclusion** for the **transfer critical section
      - Blockchain ledger replica
 
 ### Why this is “Distributed”
-The **coordination** (ordering + mutual exclusion) is done by **clients communicating with each other**, not by the bank server.  
+The **coordination** (ordering + mutual exclusion) is done by **clients communicating with each other**, not by the Lamport Ledger server.  
 The server only holds balances; it does **not** decide who enters the critical section.
 
 ---
@@ -59,7 +59,7 @@ The server only holds balances; it does **not** decide who enters the critical s
 ```
 src/
   client.py          # Client node + FastAPI endpoints + Web UI
-  server.py          # Bank server + registration
+  server.py          # Lamport Ledger server + registration
   blockchain.py      # Transaction/Block/Blockchain data structures
   utils.py           # helper functions
   config.json        # network configuration
@@ -114,7 +114,7 @@ Update this file on **every machine** (server + clients):
 
 ## How to Run (Local LAN / Same Network)
 
-### Step 1 — Start the Bank Server (on server machine)
+### Step 1 — Start the Lamport Ledger Server (on server machine)
 ```bash
 python src/server.py
 ```
@@ -205,14 +205,11 @@ The UI supports:
 
 ---
 
-## Screenshots (Add yours here)
+## Screenshots
 
-Create a folder:
 ```
 screenshots/
 ```
-
-Then add screenshots and link them below.
 
 ### Distributed Deployment (3 Clients)
 <table>
@@ -239,7 +236,7 @@ Then add screenshots and link them below.
 
 ## Demo Video
 
-- **Video Link:** *(add Google Drive / YouTube link here)*
+- **Video Link:** *(YouTube link)*
 
 ---
 
