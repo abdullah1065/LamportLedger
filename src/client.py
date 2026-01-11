@@ -427,7 +427,7 @@ UI_HTML = """<!doctype html>
   <head>
     <meta charset=\"utf-8\" />
     <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
-    <title>Lamport + Blockchain Client UI</title>
+    <title>Lamport Ledger (Blockchain-based Lamport Logical Clocks)</title>
     <style>
       body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 20px; }
       .row { display: flex; flex-wrap: wrap; gap: 16px; }
