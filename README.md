@@ -226,9 +226,9 @@ screenshots/
 
 **Step B — Balances Updated + Block Added**
 <img src="screenshots/exp1_b.png" width="900"/>
-<img src="screenshots/exp1_c.png" width="900"/>
 
 ### Experiment 2 — Concurrent Transfers
+<img src="screenshots/exp2_a.png" width="900"/>
 <img src="screenshots/exp2_b.png" width="900"/>
 <img src="screenshots/exp2_c.png" width="900"/>
 
