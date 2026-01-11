@@ -1,4 +1,5 @@
-# CSE707 Project: Lamport Ledger (Blockchain-based Lamport Logical Clocks)
+# CSE707 Project: 
+Lamport Ledger (Blockchain-based Lamport Logical Clocks)
 
 Each **client node** runs a FastAPI app that:
 - participates in Lamport mutual exclusion for transfers
