@@ -1,6 +1,7 @@
 {
-    "SERVER_IPv4": "192.168.0.153",
+    "SERVER_IPv4": "192.168.0.115",
     "SERVER_PORT": 8000,
+
     "CLIENT_BIND_HOST": "0.0.0.0",
     "CLIENT_PUBLIC_IPv4": "auto",
     "CLIENT_BASE_PORT": 8000

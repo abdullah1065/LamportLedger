@@ -1,100 +1,138 @@
 import json
 import logging
-import threading
 from pathlib import Path
 from typing import Dict
 
-from fastapi import FastAPI, Request
+import fastapi
 import uvicorn
+from fastapi import Body
 
 from blockchain import Account, Transaction
 
+
+# Load config relative to this file so running from any working directory works.
 CONFIG_PATH = Path(__file__).with_name("config.json")
 with open(CONFIG_PATH, "r", encoding="utf-8") as f:
     CONFIG = json.load(f)
 
-logging.basicConfig(level=logging.INFO)
 
-app = FastAPI(title="CSE707 Bank Server")
-
-_lock = threading.Lock()
-_accounts: Dict[int, Account] = {}
-_clients_ip: Dict[int, str] = {}  # client_id -> ip
-
-
-def _server_addr() -> str:
-    return f"http://{CONFIG['SERVER_IPv4']}:{CONFIG['SERVER_PORT']}"
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+logger = logging.getLogger("bank-server")
 
 
-def _client_addr(client_id: int) -> str:
-    ip = _clients_ip[client_id]
-    port = CONFIG["CLIENT_BASE_PORT"] + client_id
-    return f"http://{ip}:{port}"
+class BankServer:
+    """Bank/registry server.
+
+    Responsibilities:
+    - Assign client IDs
+    - Track each client's reachable address for peer-to-peer messaging
+    - Maintain account balances
+    """
+
+    def __init__(self) -> None:
+        self.accounts: Dict[int, Account] = {}
+        self.clients: Dict[int, str] = {}  # client_id -> http://ip:port
+
+        # Basic settings
+        self.bind_host = "0.0.0.0"
+        self.port = int(CONFIG.get("SERVER_PORT", 8000))
+
+        self.router = fastapi.APIRouter()
+        self.router.add_api_route("/", self.root, methods=["GET"])
+        self.router.add_api_route("/register", self.register, methods=["GET"])
+        self.router.add_api_route(
+            "/register-confirm", self.register_confirm, methods=["POST"]
+        )
+        self.router.add_api_route("/balance/{client_id}", self.balance, methods=["GET"])
+        self.router.add_api_route("/transfer", self.transfer, methods=["POST"])
+        self.router.add_api_route("/exit/{client_id}", self.exit, methods=["GET"])
+
+    async def root(self):
+        return {
+            "ok": True,
+            "num_clients": len(self.clients),
+            "clients": self.clients,
+        }
+
+    async def register(self):
+        """Allocate an ID and return currently-known peers.
+
+        Note: the client must call /register-confirm afterwards to provide its address.
+        """
+
+        new_id = 1 if not self.accounts else (max(self.accounts.keys()) + 1)
+        self.accounts[new_id] = Account(id=new_id)  # default balance is set in Account
+
+        # Server address is what clients should use to call server endpoints.
+        server_ipv4 = CONFIG.get("SERVER_IPv4", "127.0.0.1")
+        server_addr = f"http://{server_ipv4}:{self.port}"
+
+        logger.info("Allocated client_id=%s", new_id)
+        return {
+            "client_id": new_id,
+            "other_clients": self.clients,
+            "server_addr": server_addr,
+        }
+
+    async def register_confirm(
+        self,
+        client_id: int = Body(..., embed=True),
+        client_addr: str = Body(..., embed=True),
+    ):
+        self.clients[int(client_id)] = str(client_addr)
+        logger.info("Registered client %s at %s", client_id, client_addr)
+        return {"result": "success"}
+
+    async def balance(self, client_id: int):
+        client_id = int(client_id)
+        if client_id not in self.accounts:
+            return fastapi.responses.JSONResponse(
+                status_code=404, content={"error": "unknown client"}
+            )
+        return {"balance": float(self.accounts[client_id].balance)}
+
+    async def transfer(self, payload: dict = Body(...)):
+        tx = Transaction(
+            sender_id=payload["sender_id"],
+            recipient_id=payload["recipient_id"],
+            amount=payload["amount"],
+            sender_logic_clock=payload["sender_logic_clock"],
+            timestamp=payload.get("timestamp"),
+            status=payload.get("status", "PENDING"),
+            num_replies=payload.get("num_replies", 0),
+        )
+
+        s = int(tx.sender_id)
+        r = int(tx.recipient_id)
+        if s not in self.accounts or r not in self.accounts:
+            return fastapi.responses.JSONResponse(
+                status_code=404, content={"result": "fail", "error": "unknown account"}
+            )
+
+        # IMPORTANT: Client already checks insufficient balance before calling /transfer.
+        # Here we just apply the change.
+        self.accounts[s].balance -= float(tx.amount)
+        self.accounts[r].balance += float(tx.amount)
+
+        logger.info("Transfer: %s -> %s amount=%s", s, r, tx.amount)
+        return {"result": "success"}
+
+    async def exit(self, client_id: int):
+        client_id = int(client_id)
+        self.clients.pop(client_id, None)
+        logger.info("Client %s removed", client_id)
+        return {"result": "success"}
 
 
-@app.get("/")
-async def health():
-    return {"ok": True, "server_addr": _server_addr(), "num_clients": len(_clients_ip)}
-
-
-@app.get("/register")
-async def register(request: Request):
-    # Identify the client machine's IP as seen by the server
-    client_ip = request.client.host
-
-    with _lock:
-        # allocate next id (1,2,3,...)
-        client_id = 1
-        if _accounts:
-            client_id = max(_accounts.keys()) + 1
-
-        _accounts[client_id] = Account(id=client_id, balance=10.0)
-        _clients_ip[client_id] = client_ip
-
-        other_clients = {cid: _client_addr(cid) for cid in _clients_ip.keys() if cid != client_id}
-
-    logging.info("Registered client %s from %s", client_id, client_ip)
-    return {"client_id": client_id, "other_clients": other_clients, "server_addr": _server_addr()}
-
-
-@app.get("/balance/{client_id}")
-async def balance(client_id: int):
-    with _lock:
-        if client_id not in _accounts:
-            return {"error": "unknown client_id"}
-        return {"balance": _accounts[client_id].balance}
-
-
-@app.post("/transfer")
-async def transfer(payload: dict):
-    tx = Transaction(**payload)
-
-    with _lock:
-        if tx.sender_id not in _accounts or tx.recipient_id not in _accounts:
-            return {"result": "failure", "error": "unknown client id"}
-
-        sender = _accounts[tx.sender_id]
-        recipient = _accounts[tx.recipient_id]
-
-        # server trusts clients to have already used Lamport mutual exclusion
-        if sender.balance < tx.amount:
-            return {"result": "failure", "error": "insufficient balance"}
-
-        sender.balance -= tx.amount
-        recipient.balance += tx.amount
-
-    logging.info("Transfer %s -> %s amount=%s", tx.sender_id, tx.recipient_id, tx.amount)
-    return {"result": "success"}
-
-
-@app.get("/exit/{client_id}")
-async def exit_client(client_id: int):
-    with _lock:
-        _clients_ip.pop(client_id, None)
-        # Keep account for grading/demo or remove; here we keep it.
-    logging.info("Client %s exited", client_id)
-    return {"result": "success"}
+def main():
+    bank = BankServer()
+    app = fastapi.FastAPI(title="CSE707 Bank Server")
+    app.include_router(bank.router)
+    uvicorn.run(app, host=bank.bind_host, port=bank.port, log_level="info")
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=int(CONFIG["SERVER_PORT"]), log_level="info")
+    main()

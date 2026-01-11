@@ -1,8 +1,6 @@
 import os
 import re
 import json
-import socket
-from pathlib import Path
 import time
 import fastapi
 import uvicorn
@@ -12,38 +10,25 @@ import grequests
 import warnings
 import threading
 import timeloop
-from typing import List, Dict
+from typing import List, Dict, Optional
 from datetime import timedelta
-from utils import get_current_time
+from pathlib import Path
+
+from utils import get_current_time, get_host_ip
 from blockchain import BlockChain, Transaction
 from fastapi import Body
+from fastapi.responses import HTMLResponse
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+import threading, time, os
+import requests
 
 CONFIG_PATH = Path(__file__).with_name('config.json')
 with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
     CONFIG = json.load(f)
 
-
-def detect_local_ip(dest_ip: str) -> str:
-    """Best-effort LAN IP detection (no internet required)."""
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        s.connect((dest_ip, 80))
-        return s.getsockname()[0]
-    except Exception:
-        try:
-            return socket.gethostbyname(socket.gethostname())
-        except Exception:
-            return '127.0.0.1'
-    finally:
-        s.close()
-
-
-RESULT_DIR = Path(__file__).resolve().parent.parent / 'result'
-RESULT_DIR.mkdir(exist_ok=True)
-LOG_PATH = RESULT_DIR / 'activity.log'
-
 logging.basicConfig(
-    level=logging.INFO, filename=str(LOG_PATH),
+    level=logging.INFO, filename='.\\result\\activity.log',
     format='%(asctime)s %(levelname)s %(name)s %(message)s'
 )
 
@@ -66,10 +51,11 @@ def tx_from_payload(payload: dict) -> Transaction:
 class Client:
     """Each user can be regarded as a Client instance"""
 
-    def __init__(self, id, ipv4, port, server_addr, other_clients) -> None:
+    def __init__(self, id, ipv4, port, server_addr, other_clients, public_addr: str) -> None:
         self.id = id
         self.ipv4 = ipv4
         self.port = port
+        self.public_addr = public_addr
         self.logic_clock = 0
         self.create_time = get_current_time()
         self.server_addr = server_addr
@@ -105,8 +91,8 @@ class Client:
                    self.message_queue_str())
 
     def __repr__(self) -> str:
-        return 'Client(id={}, ipv4={}, port={}, logic_clock={}, create_time={})'.format(
-            self.id, self.ipv4, self.port, self.logic_clock, self.create_time
+        return 'Client(id={}, bind_host={}, port={}, public_addr={}, logic_clock={}, create_time={})'.format(
+            self.id, self.ipv4, self.port, self.public_addr, self.logic_clock, self.create_time
         )
 
     def interact(self):
@@ -146,7 +132,7 @@ class Client:
 
     def prompt(self):
         time.sleep(1)
-        print('Welcome to the blockchain client!')
+        print('Or, Interact With CLI')
         print('Commands:')
         print('  1. transfer <recipient> <amount> (e.g., transfer 2 100, or, t 2 100)')
         print('  2. balance (or bal, b)')
@@ -235,39 +221,60 @@ class Client:
         return res.json()['balance']
 
     def shutdown(self):
-        res = requests.get(self.server_addr + '/exit/{}'.format(self.id))
-        assert res.status_code == 200
-
         reqs = [
-            grequests.get(other_client_addr + '/exit/{}'.format(self.id), timeout=5)
-            for other_client_addr in self.other_clients.values()
+            grequests.get(addr + f"/exit/{self.id}", timeout=5)
+            for addr in self.other_clients.values()
         ]
-        res_list = grequests.map(reqs)
-        assert all([res is not None and res.status_code == 200 for res in res_list])
-        logging.info('Client {} exit the system'.format(self.id))
+
+        res_list = grequests.map(reqs, exception_handler=lambda req, exc: None)
+
+        failed = []
+        for addr, res in zip(self.other_clients.values(), res_list):
+            if res is None or res.status_code != 200:
+                failed.append(addr)
+
+        if failed:
+            print("Warning: could not notify these peers on exit:", failed)
+
+        print(f"Client {self.id} exited.")
 
 
 def register_client(server_addr) -> Client:
     """Register a new client with the server."""
     print('Registering client to server {}...'.format(server_addr))
-    print('Registering client to server {}...'.format(server_addr))
-    print('Registering client to server {}...'.format(server_addr))
 
-    res = requests.get(server_addr + '/register')
+    res = requests.get(server_addr + '/register', timeout=5)
     assert res.status_code == 200
 
     info = res.json()
-    client_id = info['client_id']
-    client_port = CONFIG['CLIENT_BASE_PORT'] + client_id
+    client_id = int(info['client_id'])
+
+    # Determine how this client should be reachable by OTHER machines.
     public_ip = CONFIG.get('CLIENT_PUBLIC_IPv4', 'auto')
     if public_ip == 'auto':
-        public_ip = detect_local_ip(CONFIG['SERVER_IPv4'])
-    client_addr = f"http://{public_ip}:{client_port}"
+        public_ip = get_host_ip()
+
+    client_port = int(CONFIG.get('CLIENT_BASE_PORT', 8000)) + client_id
+    client_addr = 'http://{}:{}'.format(public_ip, client_port)
 
     other_clients = dict((int(k), v) for k, v in info['other_clients'].items())
-    server_addr = info['server_addr']
+    server_addr = info.get('server_addr', server_addr)
+
+    # Tell the server where it can reach this client (so future clients can discover it).
+    try:
+        r = requests.post(
+            server_addr + '/register-confirm',
+            json={'client_id': client_id, 'client_addr': client_addr},
+            timeout=5,
+        )
+        if r.status_code != 200:
+            print('Warning: server did not accept register-confirm:', r.text)
+    except Exception as e:
+        print('Warning: could not call /register-confirm:', e)
 
     print('Client {} registered'.format(client_id))
+    print('  Public address:', client_addr)
+    print('  Web UI:', client_addr + '/ui')
     logging.info('Client {} registered'.format(client_id))
 
     # Notify existing clients. Don't crash if some are offline.
@@ -295,15 +302,18 @@ def register_client(server_addr) -> Client:
 
     return Client(
         client_id,
-        CONFIG['CLIENT_BIND_HOST'],
+        CONFIG.get('CLIENT_BIND_HOST', '0.0.0.0'),
         port=client_port,
         server_addr=server_addr,
-        other_clients=other_clients
+        other_clients=other_clients,
+        public_addr=client_addr,
     )
 
 
 app = fastapi.FastAPI()
-server_address = f"http://{CONFIG['SERVER_IPv4']}:{CONFIG['SERVER_PORT']}"
+_server_ip = CONFIG.get('SERVER_IPv4') or CONFIG.get('HOST_IPv4', '127.0.0.1')
+_server_port = int(CONFIG.get('SERVER_PORT', CONFIG.get('HOST_PORT', 8000)))
+server_address = f'http://{_server_ip}:{_server_port}'
 client = register_client(server_address)
 msg_process_loop = timeloop.Timeloop()
 
@@ -388,10 +398,262 @@ async def remove_shutdown_client(client_id: int):
     print('Now other clients: {}'.format(client.other_clients))
     return {'result': 'success'}
 
+@app.post("/ui/quit")
+async def ui_quit():
+    failed = []
+    for cid, addr in client.other_clients.items():
+        try:
+            r = requests.get(f"{addr}/exit/{client.id}", timeout=2)
+            if r.status_code != 200:
+                failed.append(addr)
+        except Exception:
+            failed.append(addr)
+    try:
+        requests.get(f"{client.server_addr}/exit/{client.id}", timeout=2)
+    except Exception:
+        pass
+    def die():
+        time.sleep(0.5)
+        os._exit(0)
+    threading.Thread(target=die, daemon=True).start()
+    return {"ok": True, "failed_peers": failed}
+
+# -----------------------------
+# Web UI (runs inside FastAPI)
+# -----------------------------
+
+UI_HTML = """<!doctype html>
+<html>
+  <head>
+    <meta charset=\"utf-8\" />
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+    <title>Lamport + Blockchain Client UI</title>
+    <style>
+      body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 20px; }
+      .row { display: flex; flex-wrap: wrap; gap: 16px; }
+      .card { border: 1px solid #ddd; border-radius: 12px; padding: 14px; min-width: 320px; flex: 1; }
+      .muted { color: #666; }
+      code { background: #f6f6f6; padding: 2px 6px; border-radius: 6px; }
+      input { padding: 8px 10px; border: 1px solid #ccc; border-radius: 10px; width: 140px; }
+      button { padding: 8px 12px; border: 1px solid #ccc; border-radius: 10px; cursor: pointer; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; font-size: 14px; }
+      pre { white-space: pre-wrap; word-break: break-word; background: #f6f6f6; padding: 10px; border-radius: 12px; }
+      .ok { color: #0a7; }
+      .warn { color: #c60; }
+      .err { color: #c00; }
+    </style>
+  </head>
+  <body>
+    <h2>CSE707 Project: Lamport Ledger (Blockchain-based Lamport Logical Clocks)</h2>
+    <p class=\"muted\">Developed by Rafiad Sadat Shahir [20101580], Zayed Humayun [20141030], Abdullah Khondoker [20301065]</p>
+    <p class=\"muted\" style=\"font-style: italic\">Open this page on any device that can reach this client. (Example: <code>http://&lt;client-ip&gt;:&lt;port&gt;/ui</code>)</p>
+
+    <div class=\"row\">
+      <div class=\"card\">
+        <h3>Actions</h3>
+        <div style=\"display:flex; gap:10px; align-items:center; flex-wrap:wrap\">
+          <div>
+            <div class=\"muted\">Recipient ID</div>
+            <input id=\"recipient\" type=\"number\" min=\"1\" placeholder=\"e.g. 2\" />
+          </div>
+          <div>
+            <div class=\"muted\">Amount</div>
+            <input id=\"amount\" type=\"number\" min=\"0\" step=\"0.01\" placeholder=\"e.g. 5\" />
+          </div>
+          <div style=\"margin-top:18px\">
+            <button onclick=\"sendTransfer()\">Send Transfer</button>
+            <button onclick=\"refresh()\">Refresh</button>
+            <button onclick=\"quit()\">Quit</button>
+          </div>
+        </div>
+        <p id=\"status\" class=\"muted\" style=\"margin-top:12px\">&nbsp;</p>
+      </div>
+
+      <div class=\"card\">
+        <h3>Client State</h3>
+        <table>
+          <tbody>
+            <tr><th>Client ID</th><td id=\"client_id\">-</td></tr>
+            <tr><th>Public Address</th><td id=\"public_addr\">-</td></tr>
+            <tr><th>Server Address</th><td id=\"server_addr\">-</td></tr>
+            <tr><th>Lamport Clock</th><td id=\"logic_clock\">-</td></tr>
+            <tr><th>Balance</th><td id=\"balance\">-</td></tr>
+            <tr><th>Peers</th><td id=\"peers\">-</td></tr>
+            <tr><th>Replies Needed</th><td id=\"replies_needed\">-</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class=\"row\" style=\"margin-top:16px\">
+      <div class=\"card\">
+        <h3>Lamport Queues</h3>
+        <pre id=\"queues\">Loading...</pre>
+      </div>
+      <div class=\"card\">
+        <h3>Blockchain (latest)</h3>
+        <pre id=\"chain\">Loading...</pre>
+      </div>
+    </div>
+
+    <script>
+        async function quit() {
+            if (!confirm("Quit this client node?")) return;
+
+            document.getElementById('status').textContent = 'Quitting...';
+            document.getElementById('status').className = 'muted';
+
+            try {
+                await fetch('/ui/quit', { method: 'POST' });
+                document.getElementById('status').textContent = 'Quit requested. You can close this tab.';
+                document.getElementById('status').className = 'ok';
+            } catch (e) {
+                document.getElementById('status').textContent = 'Quit failed: ' + e;
+                document.getElementById('status').className = 'err';
+            }
+            }
+      async function refresh() {
+        try {
+          const res = await fetch('/ui/state');
+          const data = await res.json();
+
+          document.getElementById('client_id').textContent = data.client_id;
+          document.getElementById('public_addr').textContent = data.public_addr;
+          document.getElementById('server_addr').textContent = data.server_addr;
+          document.getElementById('logic_clock').textContent = data.logic_clock;
+          document.getElementById('balance').textContent = (data.balance === null) ? 'N/A' : data.balance;
+          document.getElementById('peers').textContent = `${data.num_peers} (${Object.keys(data.other_clients).join(', ') || 'none'})`;
+          document.getElementById('replies_needed').textContent = data.replies_needed;
+
+          document.getElementById('queues').textContent = JSON.stringify({
+            sending_queue: data.sending_queue,
+            message_queue: data.message_queue
+          }, null, 2);
+
+          document.getElementById('chain').textContent = JSON.stringify(data.blockchain, null, 2);
+        } catch (e) {
+          document.getElementById('status').textContent = 'Failed to refresh: ' + e;
+          document.getElementById('status').className = 'err';
+        }
+      }
+
+      async function sendTransfer() {
+        const recipient = parseInt(document.getElementById('recipient').value, 10);
+        const amount = parseFloat(document.getElementById('amount').value);
+
+        if (!recipient || !amount || amount <= 0) {
+          document.getElementById('status').textContent = 'Please enter a valid recipient and positive amount.';
+          document.getElementById('status').className = 'warn';
+          return;
+        }
+
+        document.getElementById('status').textContent = 'Transfer queued...';
+        document.getElementById('status').className = 'muted';
+
+        const res = await fetch('/ui/transfer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recipient_id: recipient, amount })
+        });
+        const data = await res.json();
+
+        if (data.result === 'success') {
+          document.getElementById('status').textContent = 'Transfer request broadcasted. (Processing will complete when you reach the head of the queue.)';
+          document.getElementById('status').className = 'ok';
+        } else {
+          document.getElementById('status').textContent = 'Transfer failed to start: ' + (data.error || 'unknown');
+          document.getElementById('status').className = 'err';
+        }
+        setTimeout(refresh, 300);
+      }
+
+      refresh();
+      setInterval(refresh, 1000);
+    </script>
+  </body>
+</html>"""
+
+
+@app.get('/ui', response_class=HTMLResponse)
+async def ui_page():
+    return UI_HTML
+
+
+def _balance_without_clock() -> Optional[float]:
+    try:
+        res = requests.get(f"{client.server_addr}/balance/{client.id}", timeout=2)
+        if res.status_code != 200:
+            return None
+        return float(res.json().get('balance'))
+    except Exception:
+        return None
+
+
+@app.get('/ui/state')
+async def ui_state():
+    # show last 5 blocks (if available)
+    last_blocks = []
+    for b in client.chain.chain[-5:]:
+        last_blocks.append({
+            'transaction': b.transaction.to_dict(),
+            'previous_hash': b.previous_hash,
+            'hash': b.hash(),
+        })
+
+    return {
+        'client_id': client.id,
+        'public_addr': client.public_addr,
+        'server_addr': client.server_addr,
+        'logic_clock': client.logic_clock,
+        'balance': _balance_without_clock(),
+        'num_peers': len(client.other_clients),
+        'other_clients': client.other_clients,
+        'replies_needed': len(client.other_clients),
+        'sending_queue': [t.to_dict() for t in client.sending_queue],
+        'message_queue': [t.to_dict() for t in client.message_queue],
+        'blockchain': {
+            'total_blocks': len(client.chain.chain),
+            'latest_blocks': last_blocks,
+        }
+    }
+
+
+@app.post('/ui/transfer')
+async def ui_transfer(payload: dict = Body(...)):
+    try:
+        recipient_id = int(payload.get('recipient_id'))
+        amount = float(payload.get('amount'))
+    except Exception:
+        return {'result': 'fail', 'error': 'invalid payload'}
+
+    def _run():
+        try:
+            client.transfer(recipient_id, amount)
+        except Exception as e:
+            print('UI transfer failed:', e)
+
+    threading.Thread(target=_run, daemon=True).start()
+    return {'result': 'success'}
+
 
 if __name__ == '__main__':
+    title = "CSE707 Project: Lamport Ledger (Blockchain-based Lamport Logical Clocks)"
+    welcome_msg = "Welcome LamportLedger client!"
+    print("=" * len(title))
+    print(title)
+    print("=" * len(title))
+
     print('Registered client with server:')
     print(client)
     client.start()
     msg_process_loop.start()
+
+    print("=" * len(welcome_msg))
+    print(welcome_msg)
+    print("=" * len(welcome_msg))
+    print('  Public address:', client.public_addr)
+    print('  Interact With Web UI (click this link):', client.public_addr + '/ui')
+    print()
+
     client.interact()
