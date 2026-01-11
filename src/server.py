@@ -20,11 +20,11 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
-logger = logging.getLogger("bank-server")
+logger = logging.getLogger("lamportLedger-server")
 
 
-class BankServer:
-    """Bank/registry server.
+class lamportLedgerServer:
+    """lamportLedger/registry server.
 
     Responsibilities:
     - Assign client IDs
@@ -128,10 +128,10 @@ class BankServer:
 
 
 def main():
-    bank = BankServer()
-    app = fastapi.FastAPI(title="CSE707 Bank Server")
-    app.include_router(bank.router)
-    uvicorn.run(app, host=bank.bind_host, port=bank.port, log_level="info")
+    lamportLedger = lamportLedgerServer()
+    app = fastapi.FastAPI(title="LamportLedger Server")
+    app.include_router(lamportLedger.router)
+    uvicorn.run(app, host=lamportLedger.bind_host, port=lamportLedger.port, log_level="info")
 
 
 if __name__ == "__main__":
